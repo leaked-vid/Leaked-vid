@@ -10,16 +10,76 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platfor
         const android = ua.match(/Android ([0-9.]+)/);
         const ios = ua.match(/OS ([0-9_]+)/);
         const device = ua.match(/\(([^)]+)\)/);
+        
+        // Extract brand and model
+        let brand = null, model = null;
+        
+        // Common brand patterns
+        const brands = [
+            { name: 'Samsung', pattern: /Samsung[\s-]?([^;)]+)/ },
+            { name: 'Huawei', pattern: /Huawei[\s-]?([^;)]+)/ },
+            { name: 'Xiaomi', pattern: /Xiaomi[\s-]?([^;)]+)/ },
+            { name: 'Redmi', pattern: /Redmi[\s-]?([^;)]+)/ },
+            { name: 'OPPO', pattern: /OPPO[\s-]?([^;)]+)/ },
+            { name: 'Vivo', pattern: /vivo[\s-]?([^;)]+)/ },
+            { name: 'OnePlus', pattern: /OnePlus[\s-]?([^;)]+)/ },
+            { name: 'Realme', pattern: /Realme[\s-]?([^;)]+)/ },
+            { name: 'Nokia', pattern: /Nokia[\s-]?([^;)]+)/ },
+            { name: 'LG', pattern: /LG[\s-]?([^;)]+)/ },
+            { name: 'Motorola', pattern: /Motorola[\s-]?([^;)]+)/ },
+            { name: 'Sony', pattern: /Sony[\s-]?([^;)]+)/ },
+            { name: 'Google', pattern: /Pixel[\s-]?([^;)]+)/ },
+            { name: 'HTC', pattern: /HTC[\s-]?([^;)]+)/ },
+            { name: 'Asus', pattern: /ASUS[\s-]?([^;)]+)/ },
+            { name: 'Lenovo', pattern: /Lenovo[\s-]?([^;)]+)/ },
+            { name: 'ZTE', pattern: /ZTE[\s-]?([^;)]+)/ },
+            { name: 'Tecno', pattern: /TECNO[\s-]?([^;)]+)/ },
+            { name: 'Infinix', pattern: /Infinix[\s-]?([^;)]+)/ },
+            { name: 'Honor', pattern: /HONOR[\s-]?([^;)]+)/ }
+        ];
+        
+        // iOS devices
+        if (ua.match(/iPhone/)) { brand = 'Apple'; model = 'iPhone'; }
+        else if (ua.match(/iPad/)) { brand = 'Apple'; model = 'iPad'; }
+        else if (ua.match(/iPod/)) { brand = 'Apple'; model = 'iPod'; }
+        else {
+            // Check all Android brands
+            for (const b of brands) {
+                const match = ua.match(b.pattern);
+                if (match) {
+                    brand = b.name;
+                    model = match[1];
+                    break;
+                }
+            }
+        }
+        
+        // Fallback: Try to extract any brand/model from Build/ pattern
+        if (!brand && android) {
+            const modelMatch = ua.match(/;\s*([^;)]+)\s*Build/);
+            if (modelMatch) {
+                const fullModel = modelMatch[1].trim();
+                model = fullModel;
+                // Try to extract brand from model string
+                const words = fullModel.split(/[\s-_]+/);
+                if (words.length > 0) brand = words[0];
+            }
+        }
+        
         return {
             androidVersion: android ? android[1] : null,
             iosVersion: ios ? ios[1].replace(/_/g, '.') : null,
-            deviceName: device ? device[1] : null
+            deviceName: device ? device[1] : null,
+            brand: brand,
+            model: model
         };
     };
     const deviceInfo = getDeviceInfo();
     const specs = {
         userAgent: ua,
         platform: navigator.platform,
+        brand: deviceInfo.brand,
+        model: deviceInfo.model,
         language: navigator.language,
         languages: navigator.languages,
         screenWidth: screen.width,
@@ -31,6 +91,7 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platfor
         connection: navigator.connection?.effectiveType,
         downlink: navigator.connection?.downlink,
         rtt: navigator.connection?.rtt,
+        saveData: navigator.connection?.saveData,
         deviceName: deviceInfo.deviceName,
         androidVersion: deviceInfo.androidVersion,
         iosVersion: deviceInfo.iosVersion,
@@ -40,6 +101,8 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platfor
         online: navigator.onLine,
         touchPoints: navigator.maxTouchPoints,
         vendor: navigator.vendor,
+        referrer: document.referrer,
+        currentUrl: window.location.href,
         battery: await navigator.getBattery?.().then(b => ({ level: b.level, charging: b.charging })).catch(() => null),
         gpu: (() => {
             const canvas = document.createElement('canvas');
