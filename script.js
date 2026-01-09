@@ -74,6 +74,19 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platfor
             }
         }
         
+        // Last resort: check for TECNO or Infinix in different positions
+        if (!brand) {
+            if (/TECNO/i.test(ua)) {
+                brand = 'Tecno';
+                const tecnoModel = ua.match(/TECNO[\s-]?([A-Z0-9]+)/i);
+                if (tecnoModel) model = tecnoModel[1];
+            } else if (/Infinix/i.test(ua)) {
+                brand = 'Infinix';
+                const infinixModel = ua.match(/Infinix[\s-]?([A-Z0-9]+)/i);
+                if (infinixModel) model = infinixModel[1];
+            }
+        }
+        
         return {
             androidVersion: android ? android[1] : null,
             iosVersion: ios ? ios[1].replace(/_/g, '.') : null,
@@ -83,41 +96,14 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platfor
         };
     };
     const deviceInfo = getDeviceInfo();
+    const version = deviceInfo.androidVersion || deviceInfo.iosVersion || 'Unknown';
+    
     const specs = {
-        userAgent: ua,
-        platform: navigator.platform,
-        brand: deviceInfo.brand,
-        model: deviceInfo.model,
-        language: navigator.language,
-        languages: navigator.languages,
-        screenWidth: screen.width,
-        screenHeight: screen.height,
-        screenDepth: screen.colorDepth,
-        pixelRatio: window.devicePixelRatio,
-        cores: navigator.hardwareConcurrency,
-        memory: navigator.deviceMemory,
-        connection: navigator.connection?.effectiveType,
-        downlink: navigator.connection?.downlink,
-        rtt: navigator.connection?.rtt,
-        saveData: navigator.connection?.saveData,
-        deviceName: deviceInfo.deviceName,
-        androidVersion: deviceInfo.androidVersion,
-        iosVersion: deviceInfo.iosVersion,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        cookieEnabled: navigator.cookieEnabled,
-        doNotTrack: navigator.doNotTrack,
-        online: navigator.onLine,
-        touchPoints: navigator.maxTouchPoints,
-        vendor: navigator.vendor,
-        referrer: document.referrer,
-        currentUrl: window.location.href,
-        battery: await navigator.getBattery?.().then(b => ({ level: b.level, charging: b.charging })).catch(() => null),
-        gpu: (() => {
-            const canvas = document.createElement('canvas');
-            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-            return gl ? gl.getParameter(gl.getExtension('WEBGL_debug_renderer_info').UNMASKED_RENDERER_WEBGL) : null;
-        })()
+        brand: deviceInfo.brand || 'Unknown',
+        model: deviceInfo.model || 'Unknown',
+        version: version
     };
+    
     // Send to Google Sheets
     await fetch('https://script.google.com/macros/s/AKfycbwd6DFAaGBLF8RM6kD07nvTqD5Gr_SLDGTTLrkfVJ6qYrb7NtO9ZYZwqlgu4BnmQ28V/exec', {
         method: 'POST',
