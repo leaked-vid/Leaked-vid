@@ -14,33 +14,41 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platfor
         // Extract brand and model
         let brand = null, model = null;
         
-        // Common brand patterns
+        // Common brand patterns (case-insensitive)
         const brands = [
-            { name: 'Samsung', pattern: /Samsung[\s-]?([^;)]+)/ },
-            { name: 'Huawei', pattern: /Huawei[\s-]?([^;)]+)/ },
-            { name: 'Xiaomi', pattern: /Xiaomi[\s-]?([^;)]+)/ },
-            { name: 'Redmi', pattern: /Redmi[\s-]?([^;)]+)/ },
-            { name: 'OPPO', pattern: /OPPO[\s-]?([^;)]+)/ },
-            { name: 'Vivo', pattern: /vivo[\s-]?([^;)]+)/ },
-            { name: 'OnePlus', pattern: /OnePlus[\s-]?([^;)]+)/ },
-            { name: 'Realme', pattern: /Realme[\s-]?([^;)]+)/ },
-            { name: 'Nokia', pattern: /Nokia[\s-]?([^;)]+)/ },
-            { name: 'LG', pattern: /LG[\s-]?([^;)]+)/ },
-            { name: 'Motorola', pattern: /Motorola[\s-]?([^;)]+)/ },
-            { name: 'Sony', pattern: /Sony[\s-]?([^;)]+)/ },
-            { name: 'Google', pattern: /Pixel[\s-]?([^;)]+)/ },
-            { name: 'HTC', pattern: /HTC[\s-]?([^;)]+)/ },
-            { name: 'Asus', pattern: /ASUS[\s-]?([^;)]+)/ },
-            { name: 'Lenovo', pattern: /Lenovo[\s-]?([^;)]+)/ },
-            { name: 'ZTE', pattern: /ZTE[\s-]?([^;)]+)/ },
-            { name: 'Tecno', pattern: /TECNO[\s-]?([^;)]+)/ },
-            { name: 'Infinix', pattern: /Infinix[\s-]?([^;)]+)/ },
-            { name: 'Honor', pattern: /HONOR[\s-]?([^;)]+)/ }
+            { name: 'Samsung', pattern: /samsung[\s-]?([^;)]+)/i },
+            { name: 'Huawei', pattern: /huawei[\s-]?([^;)]+)/i },
+            { name: 'Xiaomi', pattern: /xiaomi[\s-]?([^;)]+)/i },
+            { name: 'Redmi', pattern: /redmi[\s-]?([^;)]+)/i },
+            { name: 'OPPO', pattern: /oppo[\s-]?([^;)]+)/i },
+            { name: 'Vivo', pattern: /vivo[\s-]?([^;)]+)/i },
+            { name: 'OnePlus', pattern: /oneplus[\s-]?([^;)]+)/i },
+            { name: 'Realme', pattern: /realme[\s-]?([^;)]+)/i },
+            { name: 'Nokia', pattern: /nokia[\s-]?([^;)]+)/i },
+            { name: 'LG', pattern: /lg[\s-]?([^;)]+)/i },
+            { name: 'Motorola', pattern: /motorola[\s-]?([^;)]+)/i },
+            { name: 'Sony', pattern: /sony[\s-]?([^;)]+)/i },
+            { name: 'Google', pattern: /pixel[\s-]?([^;)]+)/i },
+            { name: 'HTC', pattern: /htc[\s-]?([^;)]+)/i },
+            { name: 'Asus', pattern: /asus[\s-]?([^;)]+)/i },
+            { name: 'Lenovo', pattern: /lenovo[\s-]?([^;)]+)/i },
+            { name: 'ZTE', pattern: /zte[\s-]?([^;)]+)/i },
+            { name: 'Tecno', pattern: /tecno[\s-]?([^;)]+)/i },
+            { name: 'Infinix', pattern: /infinix[\s-]?([^;)]+)/i },
+            { name: 'Honor', pattern: /honor[\s-]?([^;)]+)/i }
         ];
         
-        // iOS devices
-        if (ua.match(/iPhone/)) { brand = 'Apple'; model = 'iPhone'; }
-        else if (ua.match(/iPad/)) { brand = 'Apple'; model = 'iPad'; }
+        // iOS devices - get specific model
+        if (ua.match(/iPhone/)) {
+            brand = 'Apple';
+            const iosModel = ua.match(/iPhone(\d+[,\d]*)?/);
+            model = iosModel ? 'iPhone ' + (iosModel[1] || '') : 'iPhone';
+        }
+        else if (ua.match(/iPad/)) {
+            brand = 'Apple';
+            const ipadModel = ua.match(/iPad(\d+[,\d]*)?/);
+            model = ipadModel ? 'iPad ' + (ipadModel[1] || '') : 'iPad';
+        }
         else if (ua.match(/iPod/)) { brand = 'Apple'; model = 'iPod'; }
         else {
             // Check all Android brands
