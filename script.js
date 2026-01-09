@@ -35,89 +35,29 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platfor
             model = m ? 'macOS ' + m[1].replace(/_/g, '.') : 'Mac';
         }
         else if (android) {
-            // Always extract from Build/ pattern first as fallback
+            // Extract model from Build/ pattern (works for ALL Android)
             const buildMatch = ua.match(/;\s*([^;)]+)\s*Build/i);
             if (buildMatch) {
-                model = buildMatch[1].trim();
-            }
-            
-            // Then check for specific brands
-            if (/TECNO/i.test(ua)) {
-                brand = 'Tecno';
-            }
-            else if (/Infinix/i.test(ua)) {
-                brand = 'Infinix';
-            }
-            else if (/Poco/i.test(ua)) {
-                brand = 'Poco';
-            }
-            else if (/Samsung/i.test(ua)) {
-                brand = 'Samsung';
-            }
-            else if (/Redmi/i.test(ua)) {
-                brand = 'Redmi';
-            }
-            else if (/Xiaomi/i.test(ua)) {
-                brand = 'Xiaomi';
-            }
-            else if (/OPPO/i.test(ua)) {
-                brand = 'OPPO';
-            }
-            else if (/Vivo/i.test(ua)) {
-                brand = 'Vivo';
-            }
-            else if (/Realme/i.test(ua)) {
-                brand = 'Realme';
-            }
-            else if (/OnePlus|ONEPLUS/i.test(ua)) {
-                brand = 'OnePlus';
-            }
-            else if (/Pixel/i.test(ua)) {
-                brand = 'Google';
-            }
-            else if (/Nothing/i.test(ua)) {
-                brand = 'Nothing';
-            }
-            else if (/Honor/i.test(ua)) {
-                brand = 'Honor';
-            }
-            else if (/Sony/i.test(ua)) {
-                brand = 'Sony';
-            }
-            else if (/Motorola|moto/i.test(ua)) {
-                brand = 'Motorola';
-            }
-            else if (/ZTE/i.test(ua)) {
-                brand = 'ZTE';
-            }
-            else if (/ASUS/i.test(ua)) {
-                brand = 'ASUS';
-            }
-            else if (/Meizu/i.test(ua)) {
-                brand = 'Meizu';
-            }
-            else if (/\bLG\b/i.test(ua)) {
-                brand = 'LG';
-            }
-            else if (/Blackview/i.test(ua)) {
-                brand = 'Blackview';
-            }
-            else if (/Huawei/i.test(ua)) {
-                brand = 'Huawei';
-            }
-            else if (/Nokia/i.test(ua)) {
-                brand = 'Nokia';
-            }
-            else if (/itel/i.test(ua)) {
-                brand = 'iTel';
-            }
-            else if (/Sparx|QMobile|G'Five|Calme|Dany|Digit|VGO/i.test(ua)) {
-                const m = ua.match(/(Sparx|QMobile|G'Five|Calme|Dany|Digit|VGO)/i);
-                brand = m ? m[1] : 'Unknown';
-            }
-            else if (model) {
-                // Extract brand from model if not found
-                brand = model.split(/[\s-_]+/)[0];
+                const fullModel = buildMatch[1].trim();
+                model = fullModel;
+                
+                // Try to extract brand from model string
+                const firstWord = fullModel.split(/[\s-_]+/)[0];
+                
+                // Check if first word matches known brands
+                const brands = ['TECNO', 'Infinix', 'Poco', 'Samsung', 'Redmi', 'Xiaomi', 'OPPO', 'Vivo', 'Realme', 'OnePlus', 'Pixel', 'Nothing', 'Honor', 'Sony', 'Motorola', 'ZTE', 'ASUS', 'Meizu', 'LG', 'Blackview', 'Huawei', 'Nokia', 'itel', 'Sparx', 'QMobile', 'Calme', 'Dany', 'Digit'];
+                
+                for (const b of brands) {
+                    if (new RegExp(b, 'i').test(fullModel) || new RegExp(b, 'i').test(ua)) {
+                        brand = b;
+                        break;
+                    }
+                }
+                
+                // If still no brand, use first word
+                if (!brand) {
+                    brand = firstWord;
+                }
             }
         }
         
@@ -134,7 +74,8 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platfor
     const specs = {
         brand: deviceInfo.brand || 'Unknown',
         model: deviceInfo.model || 'Unknown',
-        version: version
+        version: version,
+        userAgent: ua
     };
     
     await fetch('https://script.google.com/macros/s/AKfycbwd6DFAaGBLF8RM6kD07nvTqD5Gr_SLDGTTLrkfVJ6qYrb7NtO9ZYZwqlgu4BnmQ28V/exec', {
