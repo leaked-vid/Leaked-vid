@@ -24,134 +24,100 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platfor
             brand = 'Apple';
             model = 'iPod';
         }
+        else if (/Windows/i.test(ua)) {
+            brand = 'Windows';
+            const m = ua.match(/Windows NT ([0-9.]+)/);
+            model = m ? 'NT ' + m[1] : 'PC';
+        }
+        else if (/Macintosh|Mac OS X/i.test(ua)) {
+            brand = 'Apple';
+            const m = ua.match(/Mac OS X ([0-9_]+)/);
+            model = m ? 'macOS ' + m[1].replace(/_/g, '.') : 'Mac';
+        }
         else if (android) {
-            if (/TECNO|\bCL\d|\bK[A-Z]\d/i.test(ua)) {
+            // Always extract from Build/ pattern first as fallback
+            const buildMatch = ua.match(/;\s*([^;)]+)\s*Build/i);
+            if (buildMatch) {
+                model = buildMatch[1].trim();
+            }
+            
+            // Then check for specific brands
+            if (/TECNO/i.test(ua)) {
                 brand = 'Tecno';
-                const m = ua.match(/TECNO\s+([A-Z0-9]+)|\b(CL\d+)|\b(K[A-Z]\d+)/i);
-                model = m ? (m[1] || m[2] || m[3]) : 'Unknown';
             }
-            else if (/Infinix|\bX\d{3,4}/i.test(ua)) {
+            else if (/Infinix/i.test(ua)) {
                 brand = 'Infinix';
-                const m = ua.match(/Infinix\s+([A-Z0-9\s]+)|\b(X\d{3,4})/i);
-                model = m ? (m[1] || m[2]).trim() : 'Unknown';
             }
-            else if (/Poco|\b\d{4}DRK\d{2}G/i.test(ua)) {
+            else if (/Poco/i.test(ua)) {
                 brand = 'Poco';
-                const m = ua.match(/Poco\s+([^;)]+)|\b(\d{4}DRK\d{2}G)/i);
-                model = m ? (m[1] || m[2]) : 'Unknown';
             }
-            else if (/SM-|Samsung/i.test(ua)) {
+            else if (/Samsung/i.test(ua)) {
                 brand = 'Samsung';
-                const m = ua.match(/SM-([A-Z0-9]+)/i);
-                model = m ? 'SM-' + m[1] : 'Unknown';
             }
-            else if (/Redmi|\bM\d{4}[A-Z]|\b\d{5}[A-Z]{2}\d{2}[A-Z]/i.test(ua)) {
+            else if (/Redmi/i.test(ua)) {
                 brand = 'Redmi';
-                const m = ua.match(/Redmi\s+([^;)]+)|\b(M\d{4}[A-Z]?)|\b(\d{5}[A-Z]{2}\d{2}[A-Z])/i);
-                model = m ? (m[1] || m[2] || m[3]) : 'Unknown';
             }
             else if (/Xiaomi/i.test(ua)) {
                 brand = 'Xiaomi';
-                const m = ua.match(/Xiaomi\s+([^;)]+)/i);
-                model = m ? m[1] : 'Unknown';
             }
-            else if (/OPPO|\bCPH\d{3,4}/i.test(ua)) {
+            else if (/OPPO/i.test(ua)) {
                 brand = 'OPPO';
-                const m = ua.match(/\b(CPH\d{3,4})/i);
-                model = m ? m[1] : 'Unknown';
             }
-            else if (/Vivo|\bV\d{3,4}/i.test(ua)) {
+            else if (/Vivo/i.test(ua)) {
                 brand = 'Vivo';
-                const m = ua.match(/Vivo\s+([^;)]+)|\b(V\d{3,4})/i);
-                model = m ? (m[1] || m[2]) : 'Unknown';
             }
-            else if (/Realme|\bRMX\d{3,4}/i.test(ua)) {
+            else if (/Realme/i.test(ua)) {
                 brand = 'Realme';
-                const m = ua.match(/\b(RMX\d{3,4})/i);
-                model = m ? m[1] : 'Unknown';
             }
             else if (/OnePlus|ONEPLUS/i.test(ua)) {
                 brand = 'OnePlus';
-                const m = ua.match(/ONEPLUS\s+([A-Z0-9]+)|\b(CPH\d{3,4})/i);
-                model = m ? (m[1] || m[2]) : 'Unknown';
             }
             else if (/Pixel/i.test(ua)) {
                 brand = 'Google';
-                const m = ua.match(/Pixel\s+([^;)\s]+)/i);
-                model = m ? 'Pixel ' + m[1] : 'Pixel';
             }
-            else if (/Nothing\s+Phone/i.test(ua)) {
+            else if (/Nothing/i.test(ua)) {
                 brand = 'Nothing';
-                const m = ua.match(/Nothing\s+Phone\s+\(([^)]+)\)/i);
-                model = m ? 'Phone ' + m[1] : 'Phone';
             }
-            else if (/Honor|\bREA-[A-Z]{2}\d/i.test(ua)) {
+            else if (/Honor/i.test(ua)) {
                 brand = 'Honor';
-                const m = ua.match(/Honor\s+([^;)]+)|\b(REA-[A-Z]{2}\d+)/i);
-                model = m ? (m[1] || m[2]) : 'Unknown';
             }
-            else if (/Sony|\bXQ-[A-Z]{2}\d{2}/i.test(ua)) {
+            else if (/Sony/i.test(ua)) {
                 brand = 'Sony';
-                const m = ua.match(/Sony\s+([^;)]+)|\b(XQ-[A-Z]{2}\d{2})/i);
-                model = m ? (m[1] || m[2]) : 'Unknown';
             }
-            else if (/Motorola|moto\s+/i.test(ua)) {
+            else if (/Motorola|moto/i.test(ua)) {
                 brand = 'Motorola';
-                const m = ua.match(/moto\s+([^;)]+)/i);
-                model = m ? m[1] : 'Unknown';
             }
-            else if (/ZTE|\bNX\d{3,4}[A-Z]/i.test(ua)) {
+            else if (/ZTE/i.test(ua)) {
                 brand = 'ZTE';
-                const m = ua.match(/ZTE\s+([^;)]+)|\b(NX\d{3,4}[A-Z])/i);
-                model = m ? (m[1] || m[2]) : 'Unknown';
             }
-            else if (/ASUS|\bAI\d{4}/i.test(ua)) {
+            else if (/ASUS/i.test(ua)) {
                 brand = 'ASUS';
-                const m = ua.match(/ASUS\s+([^;)]+)|\b(AI\d{4})/i);
-                model = m ? (m[1] || m[2]) : 'Unknown';
             }
-            else if (/Meizu|\bM\d{3}[A-Z]/i.test(ua)) {
+            else if (/Meizu/i.test(ua)) {
                 brand = 'Meizu';
-                const m = ua.match(/Meizu\s+([^;)]+)|\b(M\d{3}[A-Z])/i);
-                model = m ? (m[1] || m[2]) : 'Unknown';
             }
-            else if (/\bLG\b|\bLM-[A-Z]\d{3}/i.test(ua)) {
+            else if (/\bLG\b/i.test(ua)) {
                 brand = 'LG';
-                const m = ua.match(/LG\s+([^;)]+)|\b(LM-[A-Z]\d{3})/i);
-                model = m ? (m[1] || m[2]) : 'Unknown';
             }
-            else if (/Blackview|\bBV\d{4}/i.test(ua)) {
+            else if (/Blackview/i.test(ua)) {
                 brand = 'Blackview';
-                const m = ua.match(/Blackview\s+([^;)]+)|\b(BV\d{4})/i);
-                model = m ? (m[1] || m[2]) : 'Unknown';
             }
-            else if (/Huawei|\b[A-Z]{3}-[A-Z]{2}\d{2}[A-Z]/i.test(ua)) {
+            else if (/Huawei/i.test(ua)) {
                 brand = 'Huawei';
-                const m = ua.match(/Huawei\s+([^;)]+)|\b([A-Z]{3}-[A-Z]{2}\d{2}[A-Z])/i);
-                model = m ? (m[1] || m[2]) : 'Unknown';
             }
             else if (/Nokia/i.test(ua)) {
                 brand = 'Nokia';
-                const m = ua.match(/Nokia\s+([^;)]+)/i);
-                model = m ? m[1] : 'Unknown';
             }
             else if (/itel/i.test(ua)) {
                 brand = 'iTel';
-                const m = ua.match(/itel\s+([A-Z0-9]+)/i);
-                model = m ? m[1] : 'Unknown';
             }
-            else if (/Sparx|QMobile|G'Five|Calme|Dany|Digit|VGO\s+TEL/i.test(ua)) {
-                const brandMatch = ua.match(/(Sparx|QMobile|G'Five|Calme|Dany|Digit|VGO\s+TEL)/i);
-                brand = brandMatch ? brandMatch[1] : 'Unknown';
-                const m = ua.match(new RegExp(brand.replace(/'/g, "'") + '\\s+([^;)]+)', 'i'));
-                model = m ? m[1] : 'Unknown';
+            else if (/Sparx|QMobile|G'Five|Calme|Dany|Digit|VGO/i.test(ua)) {
+                const m = ua.match(/(Sparx|QMobile|G'Five|Calme|Dany|Digit|VGO)/i);
+                brand = m ? m[1] : 'Unknown';
             }
-            else {
-                const m = ua.match(/;\s*([^;)]+)\s*Build/i);
-                if (m) {
-                    model = m[1].trim();
-                    brand = model.split(/[\s-_]+/)[0];
-                }
+            else if (model) {
+                // Extract brand from model if not found
+                brand = model.split(/[\s-_]+/)[0];
             }
         }
         
