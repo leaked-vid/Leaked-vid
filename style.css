@@ -153,18 +153,54 @@ footer {
 .video-item {
     max-width: 400px;
     margin: 0 auto;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 1rem;
+    backdrop-filter: blur(10px);
 }
 
 .video-item h3 {
     color: white;
-    font-size: 1.2rem;
-    margin-top: 1rem;
-    text-align: center;
+    font-size: 1rem;
+    margin-top: 0.8rem;
+    margin-bottom: 0.8rem;
+    text-align: left;
+    line-height: 1.4;
+}
+
+.video-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    margin-top: 0.8rem;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: white;
+    font-size: 0.9rem;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.3rem 0.6rem;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.stat-item:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+.stat-icon {
+    font-size: 1rem;
 }
 
 .video-container.small {
     padding: 1rem;
     aspect-ratio: 16/9;
+    cursor: pointer;
 }
 
 .load-more-btn {
@@ -196,6 +232,7 @@ footer {
     object-fit: cover;
     border-radius: 12px;
     z-index: 1;
+    cursor: pointer;
 }
 
 video {
